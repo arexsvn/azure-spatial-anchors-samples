@@ -21,7 +21,7 @@ EditorBuildSettings:
     path: Assets/AzureSpatialAnchors.Examples/Scenes/AzureSpatialAnchorsCoarseRelocDemo.unity
     guid: 215a1784376860644a66e82f3d383b85
   - enabled: 1
-    path: Assets/SpatialNotes/SpatialNotes.unity
+    path: Assets/SpatialNotes/Scene/SpatialNotes.unity
     guid: c31d72360aacd0d42ae2317f84343ecb
   m_configObjects:
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 7df0b96c1aa1aad4d8170be2bd301ee3,

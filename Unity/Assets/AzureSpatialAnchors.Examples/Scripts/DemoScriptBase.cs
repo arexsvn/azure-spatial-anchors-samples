@@ -23,6 +23,7 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
         protected GameObject spawnedObject = null;
         protected Material spawnedObjectMat = null;
         protected bool enableAdvancingOnSelect = true;
+        [SerializeField] protected SpatialNotesUIView spatialNotesUI;
         #endregion // Member Variables
 
         #region Unity Inspector Variables
@@ -78,6 +79,11 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
         public override void Start()
         {
             feedbackBox = XRUXPicker.Instance.GetFeedbackText();
+            if (feedbackBox == null && spatialNotesUI != null)
+            {
+                feedbackBox = spatialNotesUI.getStatusTextbox();
+            }
+
             if (feedbackBox == null)
             {
                 Debug.Log($"{nameof(feedbackBox)} not found in scene by XRUXPicker.");
@@ -201,6 +207,8 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
 
         protected void SetAnchorIdsToLocate(IEnumerable<string> anchorIds)
         {
+            Debug.Log("SetAnchorIdsToLocate : anchorIds " + anchorIds + " : anchorIdsToLocate : " + anchorIdsToLocate);
+
             if (anchorIds == null)
             {
                 throw new ArgumentNullException(nameof(anchorIds));

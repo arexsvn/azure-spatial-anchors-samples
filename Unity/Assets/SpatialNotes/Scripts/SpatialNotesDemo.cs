@@ -9,83 +9,14 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
 {
     public class SpatialNotesDemo : DemoScriptBase
     {
-        internal enum AppState
-        {
-            DemoStepCreateSession = 0,
-            DemoStepConfigSession,
-            DemoStepStartSession,
-            DemoStepCreateLocalAnchor,
-            DemoStepSaveCloudAnchor,
-            DemoStepSavingCloudAnchor,
-            DemoStepStopSession,
-            DemoStepDestroySession,
-            DemoStepCreateSessionForQuery,
-            DemoStepStartSessionForQuery,
-            DemoStepLookForAnchor,
-            DemoStepLookingForAnchor,
-            DemoStepDeleteFoundAnchor,
-            DemoStepStopSessionForQuery,
-            DemoStepComplete
-        }
-
-        private readonly Dictionary<AppState, DemoStepParams> stateParams = new Dictionary<AppState, DemoStepParams>
-        {
-            { AppState.DemoStepCreateSession,new DemoStepParams() { StepMessage = "Next: Create Azure Spatial Anchors Session", StepColor = Color.clear }},
-            { AppState.DemoStepConfigSession,new DemoStepParams() { StepMessage = "Next: Configure Azure Spatial Anchors Session", StepColor = Color.clear }},
-            { AppState.DemoStepStartSession,new DemoStepParams() { StepMessage = "Next: Start Azure Spatial Anchors Session", StepColor = Color.clear }},
-            { AppState.DemoStepCreateLocalAnchor,new DemoStepParams() { StepMessage = "Tap a surface to add the Local Anchor.", StepColor = Color.blue }},
-            { AppState.DemoStepSaveCloudAnchor,new DemoStepParams() { StepMessage = "Next: Save Local Anchor to cloud", StepColor = Color.yellow }},
-            { AppState.DemoStepSavingCloudAnchor,new DemoStepParams() { StepMessage = "Saving local Anchor to cloud...", StepColor = Color.yellow }},
-            { AppState.DemoStepStopSession,new DemoStepParams() { StepMessage = "Next: Stop Azure Spatial Anchors Session", StepColor = Color.green }},
-            { AppState.DemoStepCreateSessionForQuery,new DemoStepParams() { StepMessage = "Next: Create Azure Spatial Anchors Session for query", StepColor = Color.clear }},
-            { AppState.DemoStepStartSessionForQuery,new DemoStepParams() { StepMessage = "Next: Start Azure Spatial Anchors Session for query", StepColor = Color.clear }},
-            { AppState.DemoStepLookForAnchor,new DemoStepParams() { StepMessage = "Next: Look for Anchor", StepColor = Color.clear }},
-            { AppState.DemoStepLookingForAnchor,new DemoStepParams() { StepMessage = "Looking for Anchor...", StepColor = Color.clear }},
-            { AppState.DemoStepDeleteFoundAnchor,new DemoStepParams() { StepMessage = "Next: Delete Anchor", StepColor = Color.yellow }},
-            { AppState.DemoStepStopSessionForQuery,new DemoStepParams() { StepMessage = "Next: Stop Azure Spatial Anchors Session for query", StepColor = Color.grey }},
-            { AppState.DemoStepComplete,new DemoStepParams() { StepMessage = "Next: Restart demo", StepColor = Color.clear }}
-        };
-
-        private AppState _currentAppState = AppState.DemoStepCreateSession;
-
-        AppState currentAppState
-        {
-            get
-            {
-                return _currentAppState;
-            }
-            set
-            {
-                if (_currentAppState != value)
-                {
-                    Debug.LogFormat("State from {0} to {1}", _currentAppState, value);
-                    _currentAppState = value;
-                    if (spawnedObjectMat != null)
-                    {
-                        spawnedObjectMat.color = stateParams[_currentAppState].StepColor;
-                    }
-
-                    if (!isErrorActive)
-                    {
-                        feedbackBox.text = stateParams[_currentAppState].StepMessage;
-                    }
-                }
-            }
-        }
-
-        [SerializeField] private NotesEditorView notesEditorView;
         private string currentAnchorId = "";
         private bool allowObjectPlacement = false;
+        private bool readyForObjectPlacement = false;
+        private bool placingNewNote = false;
         private SaveStateController saveStateController;
 
-        /// <summary>
-        /// Start is called on the frame when a script is enabled just before any
-        /// of the Update methods are called the first time.
-        /// </summary>
         public override void Start()
         {
-            Debug.Log(">>Azure Spatial Anchors Demo Script Start");
-
             saveStateController = new SaveStateController();
             saveStateController.init();
 
@@ -95,36 +26,37 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             {
                 return;
             }
-            feedbackBox.text = stateParams[currentAppState].StepMessage;
-
-            Debug.Log("Azure Spatial Anchors Demo script started");
 
             setupUI();
+
+            spatialNotesUI.setStatusText("Starting Session...");
 
             startup();
         }
 
         private void setupUI()
         {
-            notesEditorView.saveButton.onClick.AddListener(handleSaveNote);
-            notesEditorView.backButton.onClick.AddListener(handleBack);
+            spatialNotesUI.saveButton.onClick.AddListener(handleSaveNote);
+            spatialNotesUI.backButton.onClick.AddListener(handleBack);
+            spatialNotesUI.showNoteUI(false);
         }
 
         private void handleBack()
         {
-            notesEditorView.show(false);
+            spatialNotesUI.showNoteUI(false);
 
-            if (string.IsNullOrEmpty(saveStateController.CurrentSave.anchorId))
+            if (placingNewNote)
             {
-                allowObjectPlacement = true;
+                readyForObjectPlacement = true;
+                spatialNotesUI.setStatusText("Tap a surface to move anchor.");
             }
         }
 
         private void handleSaveNote()
         {
             SaveCurrentObjectAnchorToCloud();
-            notesEditorView.show(false);
-            //allowObjectPlacement = true;
+            spatialNotesUI.showNoteUI(false);
+            spatialNotesUI.setStatusText("Saving note...");
         }
 
         private async void startup()
@@ -142,7 +74,15 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
 
                 UnityDispatcher.InvokeOnAppThread(() =>
                 {
-                    currentAppState = AppState.DemoStepDeleteFoundAnchor;
+                    if (!string.IsNullOrEmpty(saveStateController.CurrentSave.noteText))
+                    {
+                        spatialNotesUI.setStatusText("Tap anchor to read note.");
+                    }
+                    else
+                    {
+                        spatialNotesUI.setStatusText("Found anchor.");
+                    }
+                    
                     Pose anchorPose = Pose.identity;
 
 #if UNITY_ANDROID || UNITY_IOS
@@ -154,42 +94,55 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             }
         }
 
-        /// <summary>
-        /// Update is called every frame, if the MonoBehaviour is enabled.
-        /// </summary>
         public override void Update()
         {
             base.Update();
 
-            if (spawnedObjectMat != null)
+            if (CloudManager.SessionStatus != null)
             {
-                float rat = 0.1f;
-                float createProgress = 0f;
-                if (CloudManager.SessionStatus != null)
+                if (spatialNotesUI != null)
                 {
-                    createProgress = CloudManager.SessionStatus.RecommendedForCreateProgress;
+                    spatialNotesUI.setConnection(CloudManager.SessionStatus.RecommendedForCreateProgress);
                 }
-                rat += (Mathf.Min(createProgress, 1) * 0.9f);
-                spawnedObjectMat.color = GetStepColor() * rat;
+
+                if (readyForObjectPlacement)
+                {
+                    if (CloudManager.SessionStatus.RecommendedForCreateProgress >= 1f)
+                    {
+                        allowObjectPlacement = true;
+
+                        if (!placingNewNote)
+                        {
+                            placingNewNote = true;
+                            spatialNotesUI.setStatusText("Tap a surface to place a note.");
+                        }
+
+                    }
+                    else
+                    {
+                        spatialNotesUI.setStatusText("Scan room until environment data is 100%");
+                    }
+                }
             }
         }
 
         protected override bool IsPlacingObject()
         {
-            return allowObjectPlacement;
-            //return currentAppState == AppState.DemoStepCreateLocalAnchor;
+            return readyForObjectPlacement && allowObjectPlacement;
         }
 
   
         protected override GameObject SpawnNewAnchoredObject(Vector3 worldPos, Quaternion worldRot, CloudSpatialAnchor cloudSpatialAnchor)
         {
-            allowObjectPlacement = false;
+            readyForObjectPlacement = false;
 
             GameObject spawnedObject = base.SpawnNewAnchoredObject(worldPos, worldRot, cloudSpatialAnchor);
 
-            if (cloudSpatialAnchor == null)
+            if (placingNewNote)
             {
-                notesEditorView.show(true);
+                placingNewNote = false;
+                spatialNotesUI.showNoteUI(true, false, true);
+                spatialNotesUI.setStatusText("Anchor placed, add a note.");
             }
             
 
@@ -201,16 +154,15 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             await SaveCurrentObjectAnchorToCloudAsync();
         }
 
-        protected override Color GetStepColor()
-        {
-            return stateParams[currentAppState].StepColor;
-        }
-
         protected override async Task OnSaveCloudAnchorSuccessfulAsync()
         {
             await base.OnSaveCloudAnchorSuccessfulAsync();
 
             currentAnchorId = currentCloudAnchor.Identifier;
+
+            spatialNotesUI.setStatusText("Note saved. Tap anchor to read it.");
+
+            Debug.Log("Saving anchor " + currentAnchorId + " successful. Saving to device storage...");
 
             // Sanity check that the object is still where we expect
             Pose anchorPose = Pose.identity;
@@ -223,10 +175,8 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             SpawnOrMoveCurrentAnchoredObject(anchorPose.position, anchorPose.rotation);
 
             saveStateController.CurrentSave.anchorId = currentAnchorId;
-            saveStateController.CurrentSave.noteText = notesEditorView.getText();
+            saveStateController.CurrentSave.noteText = spatialNotesUI.getText();
             saveStateController.save();
-
-            currentAppState = AppState.DemoStepStopSession;
         }
 
         protected override void OnSaveCloudAnchorFailed(Exception exception)
@@ -240,24 +190,16 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
         {
             if (CloudManager.Session == null)
             {
-                Debug.Log("Creating Session...");
                 CloudManager.SessionCreated += handleSessionCreated;
                 await CloudManager.CreateSessionAsync();
             }
 
             currentAnchorId = "";
             currentCloudAnchor = null;
-
-            //Debug.Log("Configure Session...");
-            //ConfigureSession();
-
-            //await CloudManager.StartSessionAsync();
         }
 
         private async void handleSessionCreated(object sender, EventArgs args)
         {
-            Debug.Log("Starting Session...");
-
             await CloudManager.StartSessionAsync();
 
             CloudManager.SessionCreated -= handleSessionCreated;
@@ -281,17 +223,9 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
                 */
                 //anchorLocateCriteria.Strategy = LocateStrategy.AnyStrategy;
 
+                spatialNotesUI.setStatusText("Locating saved notes...");
 
-                List<string> anchorsToFind = new List<string>();
-                if (saveStateController.CurrentSave != null && !string.IsNullOrEmpty(saveStateController.CurrentSave.anchorId))
-                {
-                    Debug.Log("ConfigureSession :: found anchor id : " + saveStateController.CurrentSave.anchorId);
-                    anchorsToFind.Add(saveStateController.CurrentSave.anchorId);
-                }
-                else
-                {
-                    Debug.Log("ConfigureSession :: no saved anchors found.");
-                }
+                List<string> anchorsToFind = new List<string> { saveStateController.CurrentSave.anchorId };
 
                 SetAnchorIdsToLocate(anchorsToFind);
 
@@ -299,108 +233,17 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             }
             else
             {
-                allowObjectPlacement = true;
+                readyForObjectPlacement = true;
             }
         }
-
-        public async override Task AdvanceDemoAsync()
-        {
-            /*
-            switch (currentAppState)
-            {
-                case AppState.DemoStepCreateSession:
-                    if (CloudManager.Session == null)
-                    {
-                        await CloudManager.CreateSessionAsync();
-                    }
-                    currentAnchorId = "";
-                    currentCloudAnchor = null;
-                    currentAppState = AppState.DemoStepConfigSession;
-                    break;
-                case AppState.DemoStepConfigSession:
-                    ConfigureSession();
-                    currentAppState = AppState.DemoStepStartSession;
-                    break;
-                case AppState.DemoStepStartSession:
-                    await CloudManager.StartSessionAsync();
-                    currentAppState = AppState.DemoStepCreateLocalAnchor;
-                    break;
-                case AppState.DemoStepCreateLocalAnchor:
-                    if (spawnedObject != null)
-                    {
-                        currentAppState = AppState.DemoStepSaveCloudAnchor;
-                    }
-                    break;
-                case AppState.DemoStepSaveCloudAnchor:
-                    currentAppState = AppState.DemoStepSavingCloudAnchor;
-                    await SaveCurrentObjectAnchorToCloudAsync();
-                    break;
-                case AppState.DemoStepStopSession:
-                    CloudManager.StopSession();
-                    CleanupSpawnedObjects();
-                    await CloudManager.ResetSessionAsync();
-                    currentAppState = AppState.DemoStepCreateSessionForQuery;
-                    break;
-                case AppState.DemoStepCreateSessionForQuery:
-                    ConfigureSession();
-                    currentAppState = AppState.DemoStepStartSessionForQuery;
-                    break;
-                case AppState.DemoStepStartSessionForQuery:
-                    await CloudManager.StartSessionAsync();
-                    currentAppState = AppState.DemoStepLookForAnchor;
-                    break;
-                case AppState.DemoStepLookForAnchor:
-                    currentAppState = AppState.DemoStepLookingForAnchor;
-                    currentWatcher = CreateWatcher();
-                    break;
-                case AppState.DemoStepLookingForAnchor:
-                    break;
-                case AppState.DemoStepDeleteFoundAnchor:
-                    await CloudManager.DeleteAnchorAsync(currentCloudAnchor);
-                    currentAppState = AppState.DemoStepStopSessionForQuery;
-                    CleanupSpawnedObjects();
-                    break;
-                case AppState.DemoStepStopSessionForQuery:
-                    CloudManager.StopSession();
-                    currentWatcher = null;
-                    currentAppState = AppState.DemoStepComplete;
-                    break;
-                case AppState.DemoStepComplete:
-                    currentCloudAnchor = null;
-                    currentAppState = AppState.DemoStepCreateSession;
-                    CleanupSpawnedObjects();
-                    break;
-                default:
-                    Debug.Log("Shouldn't get here for app state " + currentAppState.ToString());
-                    break;
-            }
-            */
-            }
-
-        /*
-        private void ConfigureSession()
-        {
-            List<string> anchorsToFind = new List<string>();
-            //if (currentAppState == AppState.DemoStepCreateSessionForQuery)
-            if (saveStateController.CurrentSave != null && !string.IsNullOrEmpty(saveStateController.CurrentSave.anchorId))
-            {
-                Debug.Log("ConfigureSession :: found anchor id : " + saveStateController.CurrentSave.anchorId);
-                anchorsToFind.Add(saveStateController.CurrentSave.anchorId);
-            }
-            else
-            {
-                Debug.Log("ConfigureSession :: no saved anchors found.");
-            }
-
-            SetAnchorIdsToLocate(anchorsToFind);
-        }
-        */
-
+  
         protected override void OnAnchorInteraction(CloudNativeAnchor anchor)
         {
             if (saveStateController.CurrentSave != null && !string.IsNullOrEmpty(saveStateController.CurrentSave.anchorId) && anchor.CloudAnchor.Identifier == saveStateController.CurrentSave.anchorId)
             {
-                notesEditorView.setFoundNote(saveStateController.CurrentSave.noteText);
+                spatialNotesUI.setNoteText(saveStateController.CurrentSave.noteText);
+                spawnedObjectMat.color = Color.yellow;
+                spatialNotesUI.showNoteUI(true, true, false);
             }
         }
 
@@ -410,7 +253,7 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
 
             base.SpawnOrMoveCurrentAnchoredObject(worldPos, worldRot);
 
-            allowObjectPlacement = false;
+            readyForObjectPlacement = false;
 
             /*
             if (spawnedNewObject)
@@ -448,6 +291,16 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             }
 #endif
             */
+        }
+
+        protected override Color GetStepColor()
+        {
+            return Color.clear;
+        }
+
+        public async override Task AdvanceDemoAsync()
+        {
+            // not needed...
         }
 
         /*

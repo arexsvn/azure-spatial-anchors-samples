@@ -67,7 +67,7 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
 
             }
 
-            Debug.LogError("Did not find feedback text control.");
+            //Debug.LogError("Did not find feedback text control.");
             return null;
         }
 
