@@ -89,9 +89,9 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
                 // this gets us a string like /Assets/AzureSpatialAnchorsPlugin/Examples/Scenes/AzureSpatialAnchorsSceneName.Unity
                 string path = SceneUtility.GetScenePathByBuildIndex(selected);
                 // Trim off /Assets/AzureSpatialAnchorsPlugin/Examples/Scenes/AzureSpatialAnchors
-                path = path.Substring(path.LastIndexOf('/') + "AzureSpatialAnchors".Length + 1);
+                path = path.Substring(path.LastIndexOf('/'));
                 // Trim off .Unity
-                path = path.Substring(0, path.LastIndexOf('.'));
+                path = path.Substring(1, path.LastIndexOf('.') - 1);
                 SelectedSceneNameText.text = path;
             }
             else

@@ -118,12 +118,23 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
         protected virtual void OnTouchInteractionEnded(Touch touch)
         {
 #if UNITY_ANDROID || UNITY_IOS
+            Ray raycast = Camera.main.ScreenPointToRay(touch.position);
+            RaycastHit raycastHit;
+            GameObject gameObject = null;
+
+            if (Physics.Raycast(raycast, out raycastHit))
+            {
+                Debug.Log("HIT : " + raycastHit.transform.gameObject.name);
+                gameObject = raycastHit.transform.gameObject;
+
+            }
+
             List<ARRaycastHit> aRRaycastHits = new List<ARRaycastHit>();
             if(arRaycastManager.Raycast(touch.position, aRRaycastHits) && aRRaycastHits.Count > 0)
             {
                 ARRaycastHit hit = aRRaycastHits[0];
-                
-                OnSelectObjectInteraction(hit.pose.position, hit);
+
+                OnSelectObjectInteraction(hit.pose.position, hit, gameObject);
             }
 #elif WINDOWS_UWP || UNITY_WSA
             RaycastHit hit;
@@ -154,7 +165,7 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
         /// </summary>
         /// <param name="hitPoint">The position.</param>
         /// <param name="target">The target.</param>
-        protected virtual void OnSelectObjectInteraction(Vector3 hitPoint, object target)
+        protected virtual void OnSelectObjectInteraction(Vector3 hitPoint, object target, GameObject gameObject = null)
         {
             // To be overridden.
         }

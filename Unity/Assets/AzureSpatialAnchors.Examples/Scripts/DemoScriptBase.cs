@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.XR.ARFoundation;
 
 namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
 {
@@ -404,14 +405,40 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
         /// </summary>
         /// <param name="hitPoint">The position.</param>
         /// <param name="target">The target.</param>
-        protected override void OnSelectObjectInteraction(Vector3 hitPoint, object target)
+        protected override void OnSelectObjectInteraction(Vector3 hitPoint, object target, GameObject gameObject = null)
         {
+            //Debug.Log("OnSelectObjectInteraction : Placing? : " + IsPlacingObject());
+
             if (IsPlacingObject())
             {
                 Quaternion rotation = Quaternion.AngleAxis(0, Vector3.up);
 
                 SpawnOrMoveCurrentAnchoredObject(hitPoint, rotation);
             }
+            else if (gameObject != null)
+            {
+                CloudNativeAnchor anchor = gameObject.GetComponent<CloudNativeAnchor>();
+
+                if (anchor != null)
+                {
+                    Debug.Log("Anchor touched : " + anchor.CloudAnchor.Identifier);
+                    OnAnchorInteraction(anchor);
+                }
+                else
+                {
+                    Debug.Log("no anchor touch");
+                }
+
+                /*
+                 *                     CloudNativeAnchor cna = spawnedObject.GetComponent<CloudNativeAnchor>();
+                    UnityEngine.XR.ARSubsystems.TrackableId anchorTrackableId = cna.NativeAnchor.WorldAnchor.trackableId;
+                */
+            }
+        }
+
+        protected virtual void OnAnchorInteraction(CloudNativeAnchor anchor)
+        {
+
         }
 
         /// <summary>
@@ -420,10 +447,11 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
         /// <param name="touch">The touch.</param>
         protected override void OnTouchInteraction(Touch touch)
         {
-            if (IsPlacingObject())
-            {
+            //Debug.Log("Touch : Placing? : " + IsPlacingObject());
+            //if (IsPlacingObject())
+            //{
                 base.OnTouchInteraction(touch);
-            }
+            //}
         }
 
         /// <summary>
@@ -538,13 +566,13 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
         /// <param name="worldRot">The world rotation.</param>
         protected virtual void SpawnOrMoveCurrentAnchoredObject(Vector3 worldPos, Quaternion worldRot)
         {
+            Debug.Log("SpawnOrMoveCurrentAnchoredObject : Moving? : " + (spawnedObject != null));
             // Create the object if we need to, and attach the platform appropriate
             // Anchor behavior to the spawned object
             if (spawnedObject == null)
             {
                 // Use factory method to create
                 spawnedObject = SpawnNewAnchoredObject(worldPos, worldRot, currentCloudAnchor);
-
                 // Update color
                 spawnedObjectMat = spawnedObject.GetComponent<MeshRenderer>().material;
             }
