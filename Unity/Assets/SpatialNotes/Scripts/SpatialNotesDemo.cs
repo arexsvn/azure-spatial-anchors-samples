@@ -20,6 +20,8 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             saveStateController = new SaveStateController();
             saveStateController.init();
 
+            Screen.sleepTimeout = SleepTimeout.NeverSleep;
+
             base.Start();
 
             if (!SanityCheckAccessConfiguration())
