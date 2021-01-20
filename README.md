@@ -1,6 +1,6 @@
 ### Spatial Notes AR Demo
 
-This demo will allow a user to place an anchor in the environment and associate a note with it.
+This demo will allow a user to place an anchor in the environment and associate a note with it. Notes can be editted or deleted.
 
 ## New User Flow
 1. Start AR Session
