@@ -5,11 +5,14 @@ public class SpatialNotesUIView : MonoBehaviour
 {
     public Button saveButton;
     public Button backButton;
+    public Button deleteButton;
     [SerializeField] private Text noteText;
     [SerializeField] private GameObject noteContainer;
+    [SerializeField] private Text confirmButtonText;
     [SerializeField] private Text statusText;
-    [SerializeField] private Text connectionText;
     [SerializeField] private InputField noteInputField;
+    [SerializeField] private Image connectionFill;
+    [SerializeField] private Image connectionIcon;
 
     void Start()
     {
@@ -21,11 +24,12 @@ public class SpatialNotesUIView : MonoBehaviour
         gameObject.SetActive(show);
     }
 
-    public void showNoteUI(bool show, bool allowBack = false, bool allowSave = false)
+    public void showNoteUI(bool show, bool allowBack = false, bool allowSave = false, bool allowDelete = false)
     {
         noteContainer.SetActive(show);
         backButton.gameObject.SetActive(allowBack);
         saveButton.gameObject.SetActive(allowSave);
+        deleteButton.gameObject.SetActive(allowDelete);
     }
 
     public void setNoteText(string text)
@@ -48,19 +52,34 @@ public class SpatialNotesUIView : MonoBehaviour
         statusText.text = text;
     }
 
+    public void setConfirmButtonText(string text)
+    {
+        confirmButtonText.text = text;
+    }
+
     public void setConnection(float strength)
     {
         strength = Mathf.Min(1f, strength);
 
+        connectionFill.fillAmount = strength;
+
+        Color connectionFillColor = Color.red;
+
         if (strength >= 1f)
         {
-            connectionText.text = "Ready!";
+            connectionIcon.color = Color.white;
+            connectionFillColor = Color.green;
+        }
+        else if (strength >= .5f)
+        {
+            connectionIcon.color = Color.grey;
+            connectionFillColor = Color.yellow;
         }
         else
         {
-            connectionText.text = "Scanning...\n" + Mathf.Floor(strength * 100f) + "%";
+            connectionIcon.color = Color.black;
         }
 
-        
+        connectionFill.color = connectionFillColor;
     }
 }

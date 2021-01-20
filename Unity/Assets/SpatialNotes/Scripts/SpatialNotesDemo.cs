@@ -38,6 +38,7 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
         {
             spatialNotesUI.saveButton.onClick.AddListener(handleSaveNote);
             spatialNotesUI.backButton.onClick.AddListener(handleBack);
+            spatialNotesUI.deleteButton.onClick.AddListener(handleDeleteAnchor);
             spatialNotesUI.showNoteUI(false);
         }
 
@@ -45,18 +46,45 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
         {
             spatialNotesUI.showNoteUI(false);
 
-            if (placingNewNote)
+            if (spawnedObject != null)
             {
-                readyForObjectPlacement = true;
-                spatialNotesUI.setStatusText("Tap a surface to move anchor.");
+                spatialNotesUI.setStatusText("Tap anchor to read note.");
             }
         }
 
         private void handleSaveNote()
         {
-            SaveCurrentObjectAnchorToCloud();
+            if (currentCloudAnchor == null)
+            {
+                SaveCurrentObjectAnchorToCloud();
+                spatialNotesUI.setStatusText("Saving note...");
+            }
+            else
+            {
+                saveStateController.CurrentSave.noteText = spatialNotesUI.getText();
+                saveStateController.save();
+                spatialNotesUI.setStatusText("Tap anchor to read note.");
+            }
             spatialNotesUI.showNoteUI(false);
-            spatialNotesUI.setStatusText("Saving note...");
+        }
+
+        private void handleDeleteAnchor()
+        {
+            deleteAnchor();
+        }
+
+        private async void deleteAnchor()
+        {
+            spatialNotesUI.setStatusText("Deleting Anchor...");
+            spatialNotesUI.showNoteUI(false);
+            spatialNotesUI.setNoteText(null);
+            await CloudManager.DeleteAnchorAsync(currentCloudAnchor);
+            CleanupSpawnedObjects();
+            currentCloudAnchor = null;
+            saveStateController.CurrentSave.anchorId = null;
+            saveStateController.CurrentSave.noteText = null;
+            saveStateController.save();
+            readyForObjectPlacement = true;
         }
 
         private async void startup()
@@ -120,7 +148,7 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
                     }
                     else
                     {
-                        spatialNotesUI.setStatusText("Scan room until environment data is 100%");
+                        spatialNotesUI.setStatusText("Move device around room to capture more data...");
                     }
                 }
             }
@@ -141,7 +169,8 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             if (placingNewNote)
             {
                 placingNewNote = false;
-                spatialNotesUI.showNoteUI(true, false, true);
+                spatialNotesUI.setConfirmButtonText("Save Note");
+                spatialNotesUI.showNoteUI(true, false, true, currentCloudAnchor != null);
                 spatialNotesUI.setStatusText("Anchor placed, add a note.");
             }
             
@@ -161,8 +190,6 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             currentAnchorId = currentCloudAnchor.Identifier;
 
             spatialNotesUI.setStatusText("Note saved. Tap anchor to read it.");
-
-            Debug.Log("Saving anchor " + currentAnchorId + " successful. Saving to device storage...");
 
             // Sanity check that the object is still where we expect
             Pose anchorPose = Pose.identity;
@@ -243,7 +270,8 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             {
                 spatialNotesUI.setNoteText(saveStateController.CurrentSave.noteText);
                 spawnedObjectMat.color = Color.yellow;
-                spatialNotesUI.showNoteUI(true, true, false);
+                spatialNotesUI.setConfirmButtonText("Update Note");
+                spatialNotesUI.showNoteUI(true, true, true, currentCloudAnchor != null);
             }
         }
 
