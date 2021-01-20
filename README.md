@@ -16,3 +16,6 @@ After saving, the anchor can be tapped to read the note.
 2. Load saved data.
 3. Display saved anchors.
 4. Tapping an anchor displays the associated note.
+
+
+Saved notes text can be updated or the anchor can be deleted to allow a new one to be placed in both new and returning user flows.
