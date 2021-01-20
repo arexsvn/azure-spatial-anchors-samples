@@ -51,6 +51,11 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             if (spawnedObject != null)
             {
                 spatialNotesUI.setStatusText("Tap anchor to read note.");
+
+                if (spawnedObjectMat != null)
+                {
+                    spawnedObjectMat.color = GetStepColor();
+                }
             }
         }
 
@@ -165,6 +170,12 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
         protected override GameObject SpawnNewAnchoredObject(Vector3 worldPos, Quaternion worldRot, CloudSpatialAnchor cloudSpatialAnchor)
         {
             readyForObjectPlacement = false;
+
+            // set the previous object color back to default
+            if (spawnedObjectMat != null)
+            {
+                spawnedObjectMat.color = GetStepColor();
+            }
 
             GameObject spawnedObject = base.SpawnNewAnchoredObject(worldPos, worldRot, cloudSpatialAnchor);
 
@@ -325,7 +336,7 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
 
         protected override Color GetStepColor()
         {
-            return Color.clear;
+            return Color.blue;
         }
 
         public async override Task AdvanceDemoAsync()
