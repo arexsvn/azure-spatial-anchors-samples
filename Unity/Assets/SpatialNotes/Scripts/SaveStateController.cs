@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.IO;
+using System.Collections.Generic;
 
 public class SaveStateController
 {
@@ -20,6 +21,7 @@ public class SaveStateController
         CurrentSave = new SaveState();
         CurrentSave.id = _saveId;
         CurrentSave.appVersion = Application.version;
+        CurrentSave.notes = new List<NoteData>();
     }
 
     public bool loadCurrentSave()
@@ -38,6 +40,73 @@ public class SaveStateController
         return newState;
     }
 
+    public void addNote(string anchorId, string noteText)
+    {
+        foreach (NoteData noteData in CurrentSave.notes)
+        {
+            if (noteData.anchorId == anchorId)
+            {
+                noteData.noteText = noteText;
+                save();
+                return;
+            }
+        }
+
+        NoteData newNoteData = new NoteData(anchorId, noteText);
+        CurrentSave.notes.Add(newNoteData);
+
+        save();
+    }
+
+    public void removeNote(string anchorId)
+    {
+        NoteData noteToDelete = null;
+
+
+        foreach (NoteData noteData in CurrentSave.notes)
+        {
+            if (noteData.anchorId == anchorId)
+            {
+                noteToDelete = noteData;
+            }
+        }
+
+        if (noteToDelete != null)
+        {
+            CurrentSave.notes.Remove(noteToDelete);
+            save();
+        }
+        else
+        {
+            Debug.LogError("Can't find anchorId " + anchorId + " to delete.");
+        }
+    }
+
+    public string getNoteText(string anchorId)
+    {
+        foreach (NoteData noteData in CurrentSave.notes)
+        {
+            if (noteData.anchorId == anchorId)
+            {
+                return noteData.noteText;
+            }
+        }
+        return null;
+    }
+
+    public List<string> getSavedAnchorIds()
+    {
+        List<string> anchorIds = new List<string>();
+        foreach (NoteData noteData in CurrentSave.notes)
+        {
+            if (!string.IsNullOrEmpty(noteData.anchorId))
+            {
+                anchorIds.Add(noteData.anchorId);
+            }
+        }
+        return anchorIds;
+    }
+
     public void init()
     {
         string saveDirectoryPath = Path.Combine(Application.persistentDataPath, _saveFolderPath);
@@ -50,7 +119,7 @@ public class SaveStateController
 
     public void save()
     {
-        Debug.Log("Saving State...\nanchorid : " + CurrentSave.anchorId + "\nnoteText : " + CurrentSave.noteText);
+        //Debug.Log("Saving State...\nanchorid : " + CurrentSave.anchorId + "\nnoteText : " + CurrentSave.noteText);
 
         string saveFileName = Path.Combine(_saveFolderPath, CurrentSave.id + _saveSuffix);
         string currentSavePath = Path.Combine(Application.persistentDataPath, saveFileName);
@@ -93,12 +162,11 @@ public class SaveStateController
 
     private bool isSaveStateValid(SaveState saveState)
     {
-        if (saveState != null)
+        if (saveState != null && saveState.notes != null)
         {
-            Debug.Log("Save State Found!\nanchorid : " + saveState.anchorId + "\nnoteText : " + saveState.noteText);
+           Debug.Log("Save State Found with " + saveState.notes.Count + " notes!");
         }
-
-        return saveState != null && !string.IsNullOrEmpty(saveState.anchorId);
+        return saveState != null && saveState.notes != null;
     }
 }
 
@@ -106,36 +174,19 @@ public class SaveStateController
 public class SaveState
 {
     public string id;
-    public string anchorId;
-    public string noteText;
     public string appVersion;
+    public List<NoteData> notes;
 }
 
-public static class JsonHelper
+[Serializable]
+public class NoteData
 {
-    public static T[] FromJson<T>(string json)
-    {
-        Wrapper<T> wrapper = JsonUtility.FromJson<Wrapper<T>>(json);
-        return wrapper.Items;
-    }
+    public string anchorId;
+    public string noteText;
 
-    public static string ToJson<T>(T[] array)
+    public NoteData(string anchorId, string noteText)
     {
-        Wrapper<T> wrapper = new Wrapper<T>();
-        wrapper.Items = array;
-        return JsonUtility.ToJson(wrapper);
-    }
-
-    public static string ToJson<T>(T[] array, bool prettyPrint)
-    {
-        Wrapper<T> wrapper = new Wrapper<T>();
-        wrapper.Items = array;
-        return JsonUtility.ToJson(wrapper, prettyPrint);
-    }
-
-    [Serializable]
-    private class Wrapper<T>
-    {
-        public T[] Items;
+        this.anchorId = anchorId;
+        this.noteText = noteText;
     }
 }
