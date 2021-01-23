@@ -124,7 +124,7 @@ PlayerSettings:
     16:10: 1
     16:9: 1
     Others: 1
-  bundleVersion: 4
+  bundleVersion: 1
   preloadedAssets:
   - {fileID: 0}
   - {fileID: 4800000, guid: c9f956787b1d945e7b36e0516201fc76, type: 3}
@@ -174,7 +174,7 @@ PlayerSettings:
     iPhone: com.microsoft.SpatialAnchorsUnityiOSSample-df
   buildNumber:
     iPhone: 2.5.0
-  AndroidBundleVersionCode: 4
+  AndroidBundleVersionCode: 1
   AndroidMinSdkVersion: 26
   AndroidTargetSdkVersion: 0
   AndroidPreferredInstallLocation: 1

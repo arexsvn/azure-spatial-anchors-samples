@@ -24,20 +24,20 @@ public class SaveStateController
         CurrentSave.notes = new List<NoteData>();
     }
 
-    public bool loadCurrentSave()
+    public void loadCurrentSave()
     {
-        bool newState = true;
-
         load(_saveId);
-        newState = !isSaveStateValid(CurrentSave);
 
         // upgrade format of save state if necessary...
-        if (CurrentSave == null || CurrentSave.appVersion != Application.version)
+        if (!isSaveStateValid(CurrentSave) || CurrentSave.appVersion != Application.version)
         {
             createNewSave();
         }
 
-        return newState;
+        if (CurrentSave.notes.Count > 0)
+        {
+            Debug.Log("Save State Found with " + CurrentSave.notes.Count + " notes!");
+        }
     }
 
     public void addNote(string anchorId, string noteText)
@@ -162,10 +162,6 @@ public class SaveStateController
 
     private bool isSaveStateValid(SaveState saveState)
     {
-        if (saveState != null && saveState.notes != null)
-        {
-           Debug.Log("Save State Found with " + saveState.notes.Count + " notes!");
-        }
         return saveState != null && saveState.notes != null;
     }
 }

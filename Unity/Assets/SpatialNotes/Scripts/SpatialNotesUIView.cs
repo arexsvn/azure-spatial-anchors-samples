@@ -6,6 +6,7 @@ public class SpatialNotesUIView : MonoBehaviour
     public Button saveButton;
     public Button backButton;
     public Button deleteButton;
+    
     [SerializeField] private Text noteText;
     [SerializeField] private GameObject noteContainer;
     [SerializeField] private Text confirmButtonText;
@@ -81,5 +82,13 @@ public class SpatialNotesUIView : MonoBehaviour
         }
 
         connectionFill.color = connectionFillColor;
+    }
+
+    public bool showingNoteUI
+    {
+        get
+        {
+            return noteContainer.activeInHierarchy && noteContainer.activeSelf;
+        }
     }
 }

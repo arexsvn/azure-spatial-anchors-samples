@@ -377,7 +377,6 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             // we will block the next step to show the exception message in the UI.
             isErrorActive = true;
             Debug.LogException(exception);
-            Debug.Log("Failed to save anchor " + exception.ToString());
 
             UnityDispatcher.InvokeOnAppThread(() => this.feedbackBox.text = string.Format("Error: {0}", exception.ToString()));
         }
@@ -415,51 +414,32 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
         /// <param name="target">The target.</param>
         protected override void OnSelectObjectInteraction(Vector3 hitPoint, object target, GameObject gameObject = null)
         {
-            //Debug.Log("OnSelectObjectInteraction : Placing? : " + IsPlacingObject());
-
-            if (IsPlacingObject())
+            if (gameObject != null)
+            {
+                CloudNativeAnchor anchor = gameObject.GetComponent<CloudNativeAnchor>();
+                if (anchor != null)
+                {
+                    OnAnchorInteraction(anchor);
+                }
+            }
+            else if (IsPlacingObject())
             {
                 Quaternion rotation = Quaternion.AngleAxis(0, Vector3.up);
 
                 SpawnOrMoveCurrentAnchoredObject(hitPoint, rotation);
-            }
-            else if (gameObject != null)
-            {
-                CloudNativeAnchor anchor = gameObject.GetComponent<CloudNativeAnchor>();
 
-                if (anchor != null)
-                {
-                    Debug.Log("Anchor touched : " + anchor.CloudAnchor.Identifier);
-                    OnAnchorInteraction(anchor);
-                }
-                else
-                {
-                    Debug.Log("no anchor touch");
-                }
-
-                /*
-                 *                     CloudNativeAnchor cna = spawnedObject.GetComponent<CloudNativeAnchor>();
-                    UnityEngine.XR.ARSubsystems.TrackableId anchorTrackableId = cna.NativeAnchor.WorldAnchor.trackableId;
-                */
+                NewAnchorPlaced();
             }
+        }
+
+        protected virtual void NewAnchorPlaced()
+        {
+            // To be overridden.
         }
 
         protected virtual void OnAnchorInteraction(CloudNativeAnchor anchor)
         {
-
-        }
-
-        /// <summary>
-        /// Called when a touch interaction occurs.
-        /// </summary>
-        /// <param name="touch">The touch.</param>
-        protected override void OnTouchInteraction(Touch touch)
-        {
-            //Debug.Log("Touch : Placing? : " + IsPlacingObject());
-            //if (IsPlacingObject())
-            //{
-                base.OnTouchInteraction(touch);
-            //}
+            // To be overridden.
         }
 
         /// <summary>
@@ -558,9 +538,6 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
                 CloudNativeAnchor cloudNativeAnchor = newGameObject.GetComponent<CloudNativeAnchor>();
                 cloudNativeAnchor.CloudToNative(cloudSpatialAnchor);
             }
-
-            // Set color
-            newGameObject.GetComponent<MeshRenderer>().material.color = GetStepColor();
 
             // Return newly created object
             return newGameObject;
