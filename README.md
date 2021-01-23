@@ -1,6 +1,7 @@
 ## Spatial Notes AR Demo
 
 This demo will allow a user to place anchors in the environment and associate a note with them. Notes can be edited or deleted.
+Code, assets and main 'SpatialNotes' scene for the project are in Unity/Assets/SpatialNotes. 
 
 ### New User Flow
 1. Start AR Session.
