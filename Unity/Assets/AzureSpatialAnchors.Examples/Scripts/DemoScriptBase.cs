@@ -575,6 +575,15 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             {
                 OnCloudAnchorLocated(args);
             }
+            else if (args.Status == LocateAnchorStatus.NotLocatedAnchorDoesNotExist || args.Status == LocateAnchorStatus.NotLocated)
+            {
+                AnchorNotLocated(args.Identifier);
+            }
+        }
+
+        protected virtual void AnchorNotLocated(string identifier)
+        {
+
         }
 
         private void CloudManager_LocateAnchorsCompleted(object sender, LocateAnchorsCompletedEventArgs args)

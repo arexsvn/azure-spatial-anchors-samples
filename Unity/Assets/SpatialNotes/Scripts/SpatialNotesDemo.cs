@@ -122,6 +122,13 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             }
         }
 
+        protected override void AnchorNotLocated(string identifier)
+        {
+            Debug.LogError("AnchorNotLocated " + identifier + ". Deleting.");
+
+            deleteAnchor(identifier);
+        }
+
         protected override void OnSelectObjectInteraction(Vector3 hitPoint, object target, GameObject gameObject = null)
         {
             // block all interactions when the note ui is up
@@ -131,18 +138,26 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             }
         }
 
-        private async void deleteAnchor()
+        private async void deleteAnchor(string identifier = null)
         {
+            if (identifier == null)
+            {
+                identifier = currentAnchorId;
+            }
+            
             // Remove saved notes associated with an anchor in addition to the local and cloud instances of the anchor.
             spatialNotesUI.setStatusText("Deleting Anchor...");
             spatialNotesUI.showNoteUI(false);
             spatialNotesUI.setNoteText(null);
-            saveStateController.removeNote(currentAnchorId);
+            saveStateController.removeNote(identifier);
 
-            await CloudManager.DeleteAnchorAsync(savedCloudAnchorsById[currentAnchorId].GetComponent<CloudNativeAnchor>().CloudAnchor);
+            if (savedCloudAnchorsById.ContainsKey(identifier))
+            {
+                await CloudManager.DeleteAnchorAsync(savedCloudAnchorsById[identifier].GetComponent<CloudNativeAnchor>().CloudAnchor);
+                Destroy(savedCloudAnchorsById[identifier]);
+                savedCloudAnchorsById.Remove(identifier);
+            }
 
-            Destroy(savedCloudAnchorsById[currentAnchorId]);
-            savedCloudAnchorsById.Remove(currentAnchorId);
             currentAnchorId = null;
 
             enableAnchorPlacement();
@@ -154,8 +169,6 @@ namespace Microsoft.Azure.SpatialAnchors.Unity.Examples
             await Task.Delay(500);
 
             showPlacementInfo();
-
-            Debug.Log("Reenable placement!");
 
             readyForObjectPlacement = true;
         }
